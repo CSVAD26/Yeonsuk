@@ -1,5 +1,5 @@
-## Student Sample
+## Yeonsuk's Class Code
 
-Empty template for student github repository for storing and sharing weekly projects. 
+Hi this is Yeon's repository.
 
-This is the README document. Use it to describe a little about yourself!
+you can call me Yeon :)
