@@ -8,6 +8,8 @@ class ColorNode {
     this.hue = hue(c);
     this.sat = saturation(c);
     this.bri = brightness(c);
+    this.c = color(c);
+
 
     this.edges = [];
   }
@@ -59,6 +61,15 @@ class ColorNode {
     let v1 = createVector(x, y);
     this.radius = this.pos.dist(v1);
     this.updateEdges();
+  }
+
+  changeColorToRandom() {
+    colorMode(HSB, 255);
+    this.hue = random(255);
+    this.sat = random(255);
+    this.bri = random(255);
+    this.c = color(this.hue, this.sat, this.bri);
+    this.updateEdgesColor();
   }
 
   updateEdgesColor() {

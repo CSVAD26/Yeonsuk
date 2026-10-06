@@ -13,18 +13,20 @@ let saturationChange = false;
 let radiusChange = false;
 let move = false;
 let drawConnector = false;
-let colorChange = false;
+let colorToRandomChange = false;
 
 let gZIndex = 0;
 let drawStroke = false;
 let blendModeIndex = 0;
 let blendModeArr = ['blend', 'add', 'screen'];
 let lastColor;
+let backgroundColor;
 
 function setup() {
   createCanvas(900, 900, WEBGL);
   colorMode(HSB, 255);
   lastColor = color(0, 255, 255);
+  backgroundColor = color(0, 0, 0);
   
   // Simple UI
   let strokeCB = createCheckbox('Stroke', false);
@@ -47,8 +49,10 @@ function setup() {
     "- H: change hue\n" +
     "- S: change saturation\n" +
     "- B: change brightness\n" +
-    "- C: change color when hover over a node\n" +
+    "- C: change color when hover over a node\n"
+    "- F: change background color to the color under the mouse\n"
     "- M: move a node\n\n";
+    
   let infoDiv = createDiv('<pre>' + info + '</pre>');
   infoDiv.position(width - 170, 10);
   infoDiv.style('color', '#888');
@@ -59,7 +63,7 @@ function setup() {
 }
 
 function draw() {
-  background(0);
+  background(backgroundColor);
   resetMatrix();
   colorMode(RGB, 255);
   setBlendMode(blendModeArr[blendModeIndex]);
@@ -243,7 +247,15 @@ function keyPressed() {
   else if (key === 'b' || key === 'B') saturationChange = true;
   else if (key === 'm' || key === 'M') move = true;
   else if (key === 'r' || key === 'R') radiusChange = true;
-  else if (key === 'c' || key === 'C') colorChange = true;
+  else if (key === 'c' || key === 'C') {
+    let hoverNode = nodesHitTest(mouseX - width/2, mouseY - height/2);
+    if (hoverNode) hoverNode.changeColorToRandom();
+    }
+    else if (key === 'f' || key === 'F') {
+      let c = get(mouseX, mouseY)
+      let pickedColor = hsbColorFromRgb(c[0], c[1], c[2]);
+      backgroundColor = pickedColor;
+    }
   else if (key === ' ') saveCanvas('screenshot', 'png');
 }
 
@@ -253,7 +265,7 @@ function keyReleased() {
   saturationChange = false;
   move = false;
   radiusChange = false;
-  colorChange = false;
+  colorToRandomChange = false;
 }
 
 // ----- Helper and Class Definitions -----
