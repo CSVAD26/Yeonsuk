@@ -13,6 +13,7 @@ let saturationChange = false;
 let radiusChange = false;
 let move = false;
 let drawConnector = false;
+let colorChange = false;
 
 let gZIndex = 0;
 let drawStroke = false;
@@ -46,6 +47,7 @@ function setup() {
     "- H: change hue\n" +
     "- S: change saturation\n" +
     "- B: change brightness\n" +
+    "- C: change color when hover over a node\n" +
     "- M: move a node\n\n";
   let infoDiv = createDiv('<pre>' + info + '</pre>');
   infoDiv.position(width - 170, 10);
@@ -101,6 +103,7 @@ function draw() {
       line(currentNode.pos.x, currentNode.pos.y, endPoint.x, endPoint.y);
     }
 
+
     if (drawConnector && currentEdge) {
       let sl = createVector(currentNode.radius * 0.25, 0).rotate(angle + PI * 0.5);
       let el = p5.Vector.add(sl, m);
@@ -143,8 +146,9 @@ function mousePressed() {
       }
     } else {
       if (mouseButton === LEFT) {
-        let c = get(mouseX, mouseY); // get color under mouse
-        let midNode = new ColorNode(mouseX - width/2, mouseY - height/2, 50, color(c));
+        let c = get(mouseX, mouseY); // [R, G, B, A], always RGB
+        let pickedColor = hsbColorFromRgb(c[0], c[1], c[2]);
+        let midNode = new ColorNode(mouseX - width/2, mouseY - height/2, 50, pickedColor);
         colorNodes.push(midNode);
         lastColor = midNode.c;
 
@@ -195,6 +199,7 @@ function mouseDragged() {
     else if (brightChange) currentNode.changeBright(mouseX - width/2, mouseY - height/2);
     else if (saturationChange) currentNode.changeSaturation(mouseX - width/2, mouseY - height/2);
     else if (radiusChange) currentNode.changeRadius(mouseX - width/2, mouseY - height/2);
+    else if (colorChange) currentNode.changeColor(mouseX - width/2, mouseY - height/2);
     else if (move) {
       let delta = createVector(mouseX-pmouseX, mouseY-pmouseY);
       currentNode.move(delta);
@@ -239,6 +244,7 @@ function keyPressed() {
   else if (key === 'b' || key === 'B') saturationChange = true;
   else if (key === 'm' || key === 'M') move = true;
   else if (key === 'r' || key === 'R') radiusChange = true;
+  else if (key === 'c' || key === 'C') colorChange = true;
   else if (key === ' ') saveCanvas('screenshot', 'png');
 }
 
@@ -248,13 +254,14 @@ function keyReleased() {
   saturationChange = false;
   move = false;
   radiusChange = false;
+  colorChange = false;
 }
 
 // ----- Helper and Class Definitions -----
 
 function overAnyUI() {
   // crude: ignore if mouse is on left 220px or right 170px
-  return mouseX < 230 || mouseX > width - 170;
+  return mouseX < 0 || mouseX > width - 0;
 }
 
 function nodesHitTest(x, y) {
@@ -269,6 +276,29 @@ function edgesHitTest(x, y) {
     if (edges[i].hitTest(x, y)) return edges[i];
   }
   return null;
+}
+
+// get() is raw RGB. ColorNode stores hue/saturation/brightness, and in p5 1.10
+// those getters return HSL (maxes 360 and 100) for a color made in RGB mode.
+// Build the color in HSB 0–255 so the node matches the pixel on screen.
+//AI built. couldnt figure out why it wasnt red.
+function hsbColorFromRgb(r, g, b) {
+  r /= 255;
+  g /= 255;
+  b /= 255;
+  let max = Math.max(r, g, b);
+  let min = Math.min(r, g, b);
+  let d = max - min;
+  let h = 0;
+  if (d !== 0) {
+    if (max === r) h = (g - b) / d + (g < b ? 6 : 0);
+    else if (max === g) h = (b - r) / d + 2;
+    else h = (r - g) / d + 4;
+    h /= 6;
+  }
+  let s = max === 0 ? 0 : d / max;
+  colorMode(HSB, 255);
+  return color(h * 255, s * 255, max * 255);
 }
 
 function setBlendMode(mode) {
