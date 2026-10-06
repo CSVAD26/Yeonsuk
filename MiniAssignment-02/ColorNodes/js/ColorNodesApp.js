@@ -199,7 +199,6 @@ function mouseDragged() {
     else if (brightChange) currentNode.changeBright(mouseX - width/2, mouseY - height/2);
     else if (saturationChange) currentNode.changeSaturation(mouseX - width/2, mouseY - height/2);
     else if (radiusChange) currentNode.changeRadius(mouseX - width/2, mouseY - height/2);
-    else if (colorChange) currentNode.changeColor(mouseX - width/2, mouseY - height/2);
     else if (move) {
       let delta = createVector(mouseX-pmouseX, mouseY-pmouseY);
       currentNode.move(delta);
