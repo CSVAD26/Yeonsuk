@@ -34,35 +34,44 @@ f is the force of the pendulum.
 
 let position;
 let prevPosition;
-let velocity;
-let acceleration;
 
-let frames = [];
-let currentIndex = 0;
 
 let fps = 12;
 let frameInterval = 1000 / fps;
 let lastChange = 0;
 
 //list of variables of the pendulum.
-let g= 9.81;
+let g= 10;
 let numOfArms = 2;
 let lengthOfEachArm = 100;
-let startingAngleOfEachArm = 0; //in degrees
+let massOfThePendulum = 1;
+
+let velocity; //velocity of the bob.
+let acceleration; //acceleration of the bob.
+let gravity; //gravity of the bob.
+let tension; //tension force of the string.
+
+let angle;
+let angleVelocity;
+let angleAcceleration;
 
 let paused = false;
 
 //lets start with a simple pendulum.
 
-let StartingPositionOfThePendulum;
-let EndingPositionOfThePendulum;
+let Pivot;
+let Bob;
 
 
 function setup() {
   createCanvas(800, 800);
 
-  StartingPositionOfThePendulum = createVector( width/2, height/5);
-  EndingPositionOfThePendulum = createVector(width/2, height/5+lengthOfEachArm);
+  Pivot = createVector( width/2, height/5);
+  Bob = createVector(width/2, height/5+lengthOfEachArm);
+  velocity = createVector(0, 0);
+  acceleration = createVector(0, 0);
+  gravity = createVector(0, g);
+  tension = createVector(0, 0);
 }
 
 
@@ -70,11 +79,46 @@ function setup() {
 function draw() {
   background(255);
 // first draw the pendulum.
-line(StartingPositionOfThePendulum.x,StartingPositionOfThePendulum.y, EndingPositionOfThePendulum.x, EndingPositionOfThePendulum.y);
+line(Pivot.x,Pivot.y, Bob.x, Bob.y);
 //line is drawn at the center of the canvas and little bit down.
-console.log("EndingPositionOfThePendulum: ", EndingPositionOfThePendulum);
-circle(EndingPositionOfThePendulum.x, EndingPositionOfThePendulum.y, 5);
+circle(Bob.x, Bob.y, 5);
 //draw circle.
+
+
+
+// //find the direction of the string.
+// let stringDirection = p5.Vector.sub(Bob, Pivot);
+// stringDirection.normalize();
+
+// //find the magnitude of the gravity.
+// let pullingForce = gravity.dot(stringDirection);
+
+// let angleOfThePendulum = atan2(stringDirection.y, stringDirection.x);
+// tension = p5.Vector.mult(stringDirection, -pullingForce); //tension force is in the opposite direction of the pulling force.
+
+// //vector that is pulling the bob towards the center
+// //let smallg=p5.Vector.mult(stringDirection, pullingForce);
+// //let restoringforce = p5.Vector.sub(gravity, smallg);
+// acceleration = -g * sin(angleOfThePendulum);
+
+
+// velocity.add(acceleration);
+// //velocity.add(restoringforce);
+// Bob.add(velocity);
+
+
+
+// //lock the length
+// let offset = p5.Vector.sub(Bob, Pivot);
+// offset.setMag(lengthOfEachArm);
+// Bob.set(p5.Vector.add(Pivot, offset));
+
+
+
+angleAcceleration = -g * sin(angle);
+
+
+
 
 if (!paused) {
   updatePhysics();
@@ -88,14 +132,14 @@ function mousePressed() {
 if i press the mouse button over the pendulum head,
 then move i want to drag the pendulum head to new position.
   */ 
-//  if (mouseX > EndingPositionOfThePendulum.x - 5 && mouseX < EndingPositionOfThePendulum.x + 5 && mouseY > EndingPositionOfThePendulum.y - 5 && mouseY < EndingPositionOfThePendulum.y + 5) {
+//  if (mouseX > Bob.x - 5 && mouseX < Bob.x + 5 && mouseY > Bob.y - 5 && mouseY < Bob.y + 5) {
   
 //  let aimPosition = createVector(mouseX, mouseY);
-//  let direction = p5.Vector.sub(aimPosition, StartingPositionOfThePendulum);
+//  let direction = p5.Vector.sub(aimPosition, Pivot);
 //  direction.normalize();
 //  direction.mult(lengthOfEachArm);
-//  let newposition = p5.Vector.add(StartingPositionOfThePendulum, direction);
-//  EndingPositionOfThePendulum = newposition;
+//  let newposition = p5.Vector.add(Pivot, direction);
+//  Bob = newposition;
 //  }
 
 }
@@ -104,24 +148,24 @@ function mouseDragged() {
   let aimPosition = createVector(mouseX, mouseY);
   
 
-    let direction = p5.Vector.sub(aimPosition, StartingPositionOfThePendulum);
-    console.log("aimposition: ", aimPosition, " - StartingPositionOfThePendulum: ", StartingPositionOfThePendulum, " = direction: ",  direction);
+    let direction = p5.Vector.sub(aimPosition, Pivot);
+    console.log("aimposition: ", aimPosition, " - Pivot: ", Pivot, " = direction: ",  direction);
 
     direction.normalize();
     console.log("normalized direction: ", direction);
     direction.setMag(lengthOfEachArm);
 
-    let newposition = p5.Vector.add(StartingPositionOfThePendulum, direction);
+    let newposition = p5.Vector.add(Pivot, direction);
     console.log("newposition: ", newposition);
-    EndingPositionOfThePendulum = newposition;
-    console.log("EndingPositionOfThePendulum: ", EndingPositionOfThePendulum);
+    Bob = newposition;
+    console.log("Bob: ", Bob);
    
   }
 
 
 function mouseReleased() {
   // if (mouseButton === LEFT) {
-  //   EndingPositionOfThePendulum = createVector(mouseX, mouseY);
+  //   Bob = createVector(mouseX, mouseY);
   // }
 }
 
