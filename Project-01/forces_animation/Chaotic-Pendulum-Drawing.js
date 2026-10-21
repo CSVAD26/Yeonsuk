@@ -1,166 +1,320 @@
-// Adapted from "The Nature of Code" by Daniel Shiffman
-// Bouncing object with PNG sequence animation using vectors
-// https://natureofcode.com/vectors/#the-point-of-vectors
-
-/*
-First thing -> Draw a pendulum. make it a circle with a line attached to it.
-I want to be able to move the pendulum around with the mouse.
-and then if i press space bar it will drop the pendulum and start the physic simulation.
-Second thing -> I want number of the arm to be parameterizable.-> maybe up to 4
-Third thing -> If i press t it will trace the end of the pendulum and it will draw a line.
-I want to be able to change the color of the line that is drawn my the pendulum
-*/
-
-
-/* list of variables.
-1. Number of arms
-2. Length of each arm
-3. startingAngle of each arm(in degrees)
-4. starting position of the pendulum. I want to be able to move it around with the mouse.
-4. graviatational force. default value is 9.81 m/s^2 but i want to able to change it.
-*/
-
-
-/* equation for pendulum motion
-f=ma
-f= -mg sin(theta)
-a= -g sin(theta)
-theta is the angle of the pendulum.
-g is the gravitational force.
-m is the mass of the pendulum.
-a is the acceleration of the pendulum.
-f is the force of the pendulum.
-*/
-
-let position;
-let prevPosition;
-
-
-let fps = 12;
-let frameInterval = 1000 / fps;
-let lastChange = 0;
 
 //list of variables of the pendulum.
-let g= 10;
+let g = 1000;
 let numOfArms = 2;
-let lengthOfEachArm = 100;
-let massOfThePendulum = 1;
+let lengthOfArm1 = 100;
+let lengthOfArm2 = 100;
+let massOfBob1 = 1;
+let massOfBob2 = 1;
 
-let velocity; //velocity of the bob.
-let acceleration; //acceleration of the bob.
-let gravity; //gravity of the bob.
-let tension; //tension force of the string.
-
-let angle;
-let angleVelocity;
-let angleAcceleration;
-
-let paused = false;
-
-//lets start with a simple pendulum.
+let theta1 = 0;
+let theta2 = 0;
+let omega1 = 0;
+let omega2 = 0;
 
 let Pivot;
-let Bob;
 
+//pause the simulation.
+let paused = true;
+
+let E0 = 0;
+
+let tracePath = false;
+let traceLayer;
+let prevTip = null;
+
+//control variable
+
+let lengthslider1;
+let lengthslider2;
+let massslider1;
+let massslider2;
+
+let gravityslider;
+
+let lengthslider1label;
+let lengthslider2label;
+let massslider1label;
+let massslider2label;
+
+let gravitysliderlabel;
+//
+let resebutton;
+let cleartracingbutton;
 
 function setup() {
-  createCanvas(800, 800);
+  createCanvas(1000, 1000);
+  traceLayer = createGraphics(width, height);
+  Pivot = createVector( width/2, height/4);
 
-  Pivot = createVector( width/2, height/5);
-  Bob = createVector(width/2, height/5+lengthOfEachArm);
-  velocity = createVector(0, 0);
-  acceleration = createVector(0, 0);
-  gravity = createVector(0, g);
-  tension = createVector(0, 0);
+  lengthslider1 = createSlider(1, 500, 100);
+  lengthslider1.style("accent-color", "rgb(255, 230, 0)");
+  
+  lengthslider2 = createSlider(1, 500, 100);
+  lengthslider2.style("accent-color", "rgb(255, 230, 0)");
+  
+  massslider1 = createSlider(1, 100, 1);
+  massslider1.style("accent-color", "rgb(214, 130, 130)");
+  
+  massslider2 = createSlider(1, 100, 1);
+  massslider2.style("accent-color", "rgb(214, 130, 130)");
+  
+  gravityslider = createSlider(10, 10000, 1000);
+  gravityslider.style("accent-color", "rgb(56, 104, 104)");
+  
+  resebutton = createButton("Reset");
+  cleartracingbutton = createButton("Clear Tracing");
+
+  lengthslider1label = createP();
+  lengthslider2label = createP();
+  massslider1label = createP();
+  massslider2label = createP();
+  gravitysliderlabel = createP();
+
+  placeRow(lengthslider1label, lengthslider1, 20);
+  placeRow(lengthslider2label, lengthslider2, 50);
+  placeRow(massslider1label, massslider1, 80);
+  placeRow(massslider2label, massslider2, 110);
+  placeRow(gravitysliderlabel, gravityslider, 140);
+
+  resebutton.position(10, height + 180);
+  cleartracingbutton.position(120, height + 180);
+  resebutton.mousePressed(reset);
+  cleartracingbutton.mousePressed(clearTracing);
+
+  updateControls();
 }
 
+function armPositions() {
+  let bob1 = createVector(
+    Pivot.x + lengthOfArm1 * Math.sin(theta1),
+    Pivot.y + lengthOfArm1 * Math.cos(theta1)
+  );
+  let bob2 = createVector(
+    bob1.x + lengthOfArm2 * Math.sin(theta2),
+    bob1.y + lengthOfArm2 * Math.cos(theta2)
+  );
+  return { bob1, bob2 };
+}
 
 
 function draw() {
   background(255);
-// first draw the pendulum.
-line(Pivot.x,Pivot.y, Bob.x, Bob.y);
-//line is drawn at the center of the canvas and little bit down.
-circle(Bob.x, Bob.y, 5);
-//draw circle.
+  image(traceLayer, 0, 0);
+  updateControls();
 
+  if (!paused) {
+    updatePhysics();
 
+  }
 
-// //find the direction of the string.
-// let stringDirection = p5.Vector.sub(Bob, Pivot);
-// stringDirection.normalize();
+  let arms = armPositions();
+  stroke(0);
+  strokeWeight(1);
+  line(Pivot.x, Pivot.y, arms.bob1.x, arms.bob1.y);
+  line(arms.bob1.x, arms.bob1.y, arms.bob2.x, arms.bob2.y);
+  circle(Pivot.x, Pivot.y, 8);
+  circle(arms.bob1.x, arms.bob1.y, 12);
+  circle(arms.bob2.x, arms.bob2.y, 12);
 
-// //find the magnitude of the gravity.
-// let pullingForce = gravity.dot(stringDirection);
+  fill(0);
+  noStroke();
+  textSize(14);
+  textAlign(LEFT, TOP);
+  text("press spacebar to pause", 16, 16);
+  text("press t to trace the path", 16, 36);
 
-// let angleOfThePendulum = atan2(stringDirection.y, stringDirection.x);
-// tension = p5.Vector.mult(stringDirection, -pullingForce); //tension force is in the opposite direction of the pulling force.
-
-// //vector that is pulling the bob towards the center
-// //let smallg=p5.Vector.mult(stringDirection, pullingForce);
-// //let restoringforce = p5.Vector.sub(gravity, smallg);
-// acceleration = -g * sin(angleOfThePendulum);
-
-
-// velocity.add(acceleration);
-// //velocity.add(restoringforce);
-// Bob.add(velocity);
-
-
-
-// //lock the length
-// let offset = p5.Vector.sub(Bob, Pivot);
-// offset.setMag(lengthOfEachArm);
-// Bob.set(p5.Vector.add(Pivot, offset));
-
-
-
-angleAcceleration = -g * sin(angle);
-
-
-
-
-if (!paused) {
-  updatePhysics();
-}
-
+  if (tracePath && !paused && prevTip) {
+    traceLayer.stroke(20, 80, 180);
+    traceLayer.line(prevTip.x, prevTip.y, arms.bob2.x, arms.bob2.y);
+  }
+  prevTip = { x: arms.bob2.x, y: arms.bob2.y };
 }
 
 
-function mousePressed() {
-  /*
-if i press the mouse button over the pendulum head,
-then move i want to drag the pendulum head to new position.
-  */ 
-//  if (mouseX > Bob.x - 5 && mouseX < Bob.x + 5 && mouseY > Bob.y - 5 && mouseY < Bob.y + 5) {
+function accelerations(t1, w1, t2, w2) {
+  let m1 = massOfBob1;
+  let m2 = massOfBob2;
+  let l1 = lengthOfArm1;
+  let l2 = lengthOfArm2;
+  let delta = t1 - t2;
+
+  let a11 = (m1 + m2) * l1;
+  let a12 = m2 * l2 * Math.cos(delta);
+  let a21 = m2 * l1 * Math.cos(delta);
+  let a22 = m2 * l2;
+
+  let b1 = -m2 * l2 * Math.sin(delta) * w2 * w2 - (m1 + m2) * g * Math.sin(t1);
+  let b2 =  m2 * l1 * Math.sin(delta) * w1 * w1 - m2 * g * Math.sin(t2);
+
+  let det = a11 * a22 - a12 * a21;
+  let alpha1 = (b1 * a22 - a12 * b2) / det;
+  let alpha2 = (a11 * b2 - b1 * a21) / det;
+  return { alpha1, alpha2 };
+}
+
+function derivatives(t1, w1, t2, w2) {
+  let a = accelerations(t1, w1, t2, w2);
+  return {
+    omega1: w1,
+    omega2: w2,
+    alpha1: a.alpha1,
+    alpha2: a.alpha2
+  };
+}
+
+function rk4(dt) {
+  let k1 = derivatives(theta1, omega1, theta2, omega2);
+
+  let k2 = derivatives(
+    theta1 + k1.omega1 * dt / 2,
+    omega1 + k1.alpha1 * dt / 2,
+    theta2 + k1.omega2 * dt / 2,
+    omega2 + k1.alpha2 * dt / 2
+  );
+
+  let k3 = derivatives(
+    theta1 + k2.omega1 * dt / 2,
+    omega1 + k2.alpha1 * dt / 2,
+    theta2 + k2.omega2 * dt / 2,
+    omega2 + k2.alpha2 * dt / 2
+  );
+
+  let k4 = derivatives(
+    theta1 + k3.omega1 * dt,
+    omega1 + k3.alpha1 * dt,
+    theta2 + k3.omega2 * dt,
+    omega2 + k3.alpha2 * dt
+  );
+
+  theta1 += (dt / 6) * (k1.omega1 + 2 * k2.omega1 + 2 * k3.omega1 + k4.omega1);
+  omega1 += (dt / 6) * (k1.alpha1 + 2 * k2.alpha1 + 2 * k3.alpha1 + k4.alpha1);
+  theta2 += (dt / 6) * (k1.omega2 + 2 * k2.omega2 + 2 * k3.omega2 + k4.omega2);
+  omega2 += (dt / 6) * (k1.alpha2 + 2 * k2.alpha2 + 2 * k3.alpha2 + k4.alpha2);
+}
+
+function kineticEnergy() {
+  let m1 = massOfBob1;
+  let m2 = massOfBob2;
+  let l1 = lengthOfArm1;
+  let l2 = lengthOfArm2;
+  let delta = theta1 - theta2;
+  return 0.5 * (m1 + m2) * l1 * l1 * omega1 * omega1
+       + 0.5 * m2 * l2 * l2 * omega2 * omega2
+       + m2 * l1 * l2 * omega1 * omega2 * Math.cos(delta);
+}
+
+function potentialEnergy() {
+  let m1 = massOfBob1;
+  let m2 = massOfBob2;
+  return -(m1 + m2) * g * lengthOfArm1 * Math.cos(theta1)
+         - m2 * g * lengthOfArm2 * Math.cos(theta2);
+}
+
+function potentialEnergy() {
+  let m1 = massOfBob1;
+  let m2 = massOfBob2;
+  return -(m1 + m2) * g * lengthOfArm1 * Math.cos(theta1)
+         - m2 * g * lengthOfArm2 * Math.cos(theta2);
+}
+
+function correctEnergy() {
+  let T = kineticEnergy();
+  let targetT = E0 - potentialEnergy();
+  if (T > 1e-8 && targetT > 0) {
+    let scale = Math.sqrt(targetT / T);
+    omega1 *= scale;
+    omega2 *= scale;
+  }
+}
+
+function updatePhysics() {
+  let dt = deltaTime / 1000;
+  if (dt > 0.032) dt = 0.032;
+  rk4(dt);
+  correctEnergy();
+}
+
+function reset() {
+  theta1 = 0;
+  theta2 = 0;
+  omega1 = 0;
+  omega2 = 0;
+  E0 = 0;
+  g = 1000;
+  numOfArms = 2;
+  lengthOfArm1 = 100;
+  lengthOfArm2 = 100;
+  massOfBob1 = 1;
+  massOfBob2 = 1;
+
+  gravityslider.value(g);
+  lengthslider1.value(lengthOfArm1);
+  lengthslider2.value(lengthOfArm2);
+  massslider1.value(massOfBob1);
+  massslider2.value(massOfBob2);
+
+  paused = true;
+  prevTip = null;
+
   
-//  let aimPosition = createVector(mouseX, mouseY);
-//  let direction = p5.Vector.sub(aimPosition, Pivot);
-//  direction.normalize();
-//  direction.mult(lengthOfEachArm);
-//  let newposition = p5.Vector.add(Pivot, direction);
-//  Bob = newposition;
-//  }
-
 }
+
+function clearTracing() {
+  traceLayer.clear();
+  prevTip = null;
+} 
+
+// function mousePressed() {
+//   /*
+// if i press the mouse button over the pendulum head,
+// then move i want to drag the pendulum head to new position.
+//   */ 
+// //  if (mouseX > Bob.x - 5 && mouseX < Bob.x + 5 && mouseY > Bob.y - 5 && mouseY < Bob.y + 5) {
+  
+// //  let aimPosition = createVector(mouseX, mouseY);
+// //  let direction = p5.Vector.sub(aimPosition, Pivot);
+// //  direction.normalize();
+// //  direction.mult(lengthOfEachArm);
+// //  let newposition = p5.Vector.add(Pivot, direction);
+// //  Bob = newposition;
+// //  }
+
+// }
+
+function updateControls() {
+  g = gravityslider.value();
+  lengthOfArm1 = lengthslider1.value();
+  lengthOfArm2 = lengthslider2.value();
+  massOfBob1 = massslider1.value();
+  massOfBob2 = massslider2.value();
+
+  lengthslider1label.html("Length of Arm 1: " + lengthOfArm1);
+  lengthslider2label.html("Length of Arm 2: " + lengthOfArm2);
+  massslider1label.html("Mass of Bob 1: " + massOfBob1);
+  massslider2label.html("Mass of Bob 2: " + massOfBob2);
+  gravitysliderlabel.html("Gravity: " + g);
+}
+
 
 function mouseDragged() {
-  let aimPosition = createVector(mouseX, mouseY);
+ 
+    if (!paused) return;
   
-
-    let direction = p5.Vector.sub(aimPosition, Pivot);
-    console.log("aimposition: ", aimPosition, " - Pivot: ", Pivot, " = direction: ",  direction);
-
-    direction.normalize();
-    console.log("normalized direction: ", direction);
-    direction.setMag(lengthOfEachArm);
-
-    let newposition = p5.Vector.add(Pivot, direction);
-    console.log("newposition: ", newposition);
-    Bob = newposition;
-    console.log("Bob: ", Bob);
-   
+    let arms = armPositions();
+    let d1 = dist(mouseX, mouseY, arms.bob1.x, arms.bob1.y);
+    let d2 = dist(mouseX, mouseY, arms.bob2.x, arms.bob2.y);
+  
+    if (d1 < d2) {
+      theta1 = Math.atan2(mouseX - Pivot.x, mouseY - Pivot.y);
+    } else {
+      theta2 = Math.atan2(mouseX - arms.bob1.x, mouseY - arms.bob1.y);
+    }
+  
+    omega1 = 0;
+    omega2 = 0;
   }
+   
 
 
 function mouseReleased() {
@@ -169,18 +323,26 @@ function mouseReleased() {
   // }
 }
 
-function updatePhysics() {
-  //update the gravity.
-  //update all the forces acting on the pendulum.
-}
 
 function keyPressed() {
-  if (key === ' ') {
+  if (key === " ") {
     paused = !paused;
-    if (paused) {
-      console.log("Paused");
-    } else {
+    console.log("Paused: ", paused);
+    if (!paused) {
+      E0 = kineticEnergy() + potentialEnergy();
       console.log("Unpaused");
     }
   }
+  if (key === "t" || key === "T") {
+    tracePath = !tracePath;
+    console.log("Trace Path: ", tracePath);
+  }
+}
+
+function placeRow(label, slider, y) {
+  label.style("margin", "0");
+  label.style("color", "#111");
+  label.style("background-color", "white");
+  label.position(10, height + y);
+  slider.position(200, height + y);
 }
