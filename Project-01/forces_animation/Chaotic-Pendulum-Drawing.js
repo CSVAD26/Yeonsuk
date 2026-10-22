@@ -42,8 +42,16 @@ let gravitysliderlabel;
 let resebutton;
 let cleartracingbutton;
 
+let redSlider;
+let greenSlider;
+let blueSlider;
+
+let strokeweightslider;
+
+let pendulumshown = true;
+
 function setup() {
-  createCanvas(1000, 1000);
+  createCanvas(1000, 700);
   traceLayer = createGraphics(width, height);
   Pivot = createVector( width/2, height/4);
 
@@ -53,10 +61,10 @@ function setup() {
   lengthslider2 = createSlider(1, 500, 100);
   lengthslider2.style("accent-color", "rgb(255, 230, 0)");
   
-  massslider1 = createSlider(1, 100, 1);
+  massslider1 = createSlider(1, 30, 1);
   massslider1.style("accent-color", "rgb(214, 130, 130)");
   
-  massslider2 = createSlider(1, 100, 1);
+  massslider2 = createSlider(1, 30, 1);
   massslider2.style("accent-color", "rgb(214, 130, 130)");
   
   gravityslider = createSlider(10, 10000, 1000);
@@ -65,17 +73,42 @@ function setup() {
   resebutton = createButton("Reset");
   cleartracingbutton = createButton("Clear Tracing");
 
+  redSlider = createSlider(0, 255, 0);
+  redSlider.style("accent-color", "rgb(255, 0, 0)");
+
+  greenSlider = createSlider(0, 255, 0);
+  greenSlider.style("accent-color", "rgb(0, 255, 0)");
+
+  blueSlider = createSlider(0, 255, 0);
+  blueSlider.style("accent-color", "rgb(0, 0, 255)");
+
+  strokeweightslider = createSlider(1, 1000, 1);
+  strokeweightslider.style("accent-color", "rgb(107, 28, 114)");
+
+  
+
   lengthslider1label = createP();
   lengthslider2label = createP();
   massslider1label = createP();
   massslider2label = createP();
   gravitysliderlabel = createP();
 
-  placeRow(lengthslider1label, lengthslider1, 20);
-  placeRow(lengthslider2label, lengthslider2, 50);
-  placeRow(massslider1label, massslider1, 80);
-  placeRow(massslider2label, massslider2, 110);
-  placeRow(gravitysliderlabel, gravityslider, 140);
+  redSliderlabel = createP();
+  greenSliderlabel = createP();
+  blueSliderlabel = createP();
+
+  strokeweightsliderlabel = createP();
+
+  placeRow(lengthslider1label, lengthslider1, 10, 20);
+  placeRow(lengthslider2label, lengthslider2, 10, 50);
+  placeRow(massslider1label, massslider1, 10, 80);
+  placeRow(massslider2label, massslider2, 10, 110);
+  placeRow(gravitysliderlabel, gravityslider, 10, 140);
+  placeRow(redSliderlabel, redSlider, 380, 20);
+  placeRow(greenSliderlabel, greenSlider, 380, 50);
+  placeRow(blueSliderlabel, blueSlider, 380, 80);
+  placeRow(strokeweightsliderlabel, strokeweightslider, 380, 110);
+
 
   resebutton.position(10, height + 180);
   cleartracingbutton.position(120, height + 180);
@@ -109,23 +142,31 @@ function draw() {
   }
 
   let arms = armPositions();
+
+  //draw the pendulum if it is shown
+  if(pendulumshown){
   stroke(0);
   strokeWeight(1);
   line(Pivot.x, Pivot.y, arms.bob1.x, arms.bob1.y);
   line(arms.bob1.x, arms.bob1.y, arms.bob2.x, arms.bob2.y);
+  fill(255);
   circle(Pivot.x, Pivot.y, 8);
   circle(arms.bob1.x, arms.bob1.y, 12);
   circle(arms.bob2.x, arms.bob2.y, 12);
+  }
 
   fill(0);
   noStroke();
   textSize(14);
   textAlign(LEFT, TOP);
-  text("press spacebar to pause", 16, 16);
-  text("press t to trace the path", 16, 36);
+  text("press spacebar to play/pause", 16, 16);
+  text("press T to trace the path", 16, 36);
+  text("press R to show/hide the pendulum", 16, 56);
+  text("drag the mouse to move the pendulum", 16, 76);
 
   if (tracePath && !paused && prevTip) {
-    traceLayer.stroke(20, 80, 180);
+    traceLayer.stroke(redSlider.value() , greenSlider.value(), blueSlider.value());
+    traceLayer.strokeWeight(strokeweightslider.value());
     traceLayer.line(prevTip.x, prevTip.y, arms.bob2.x, arms.bob2.y);
   }
   prevTip = { x: arms.bob2.x, y: arms.bob2.y };
@@ -288,19 +329,28 @@ function updateControls() {
   lengthOfArm2 = lengthslider2.value();
   massOfBob1 = massslider1.value();
   massOfBob2 = massslider2.value();
+  redSlider.value(redSlider.value());
+  greenSlider.value(greenSlider.value());
+  blueSlider.value(blueSlider.value());
+  strokeweightslider.value(strokeweightslider.value());
 
   lengthslider1label.html("Length of Arm 1: " + lengthOfArm1);
   lengthslider2label.html("Length of Arm 2: " + lengthOfArm2);
   massslider1label.html("Mass of Bob 1: " + massOfBob1);
   massslider2label.html("Mass of Bob 2: " + massOfBob2);
   gravitysliderlabel.html("Gravity: " + g);
+
+  redSliderlabel.html("Red: " + redSlider.value());
+  greenSliderlabel.html("Green: " + greenSlider.value());
+  blueSliderlabel.html("Blue: " + blueSlider.value());
+  strokeweightsliderlabel.html("Stroke Weight: " + strokeweightslider.value());
 }
 
 
 function mouseDragged() {
  
     if (!paused) return;
-  
+
     let arms = armPositions();
     let d1 = dist(mouseX, mouseY, arms.bob1.x, arms.bob1.y);
     let d2 = dist(mouseX, mouseY, arms.bob2.x, arms.bob2.y);
@@ -337,12 +387,19 @@ function keyPressed() {
     tracePath = !tracePath;
     console.log("Trace Path: ", tracePath);
   }
+  if (key === "r" || key === "R") {
+    pendulumshown = !pendulumshown;
+    console.log("Pendulum Shown: ", pendulumshown);
+  }
 }
 
-function placeRow(label, slider, y) {
+function placeRow(label, slider, x, y) {
   label.style("margin", "0");
   label.style("color", "#111");
   label.style("background-color", "white");
-  label.position(10, height + y);
-  slider.position(200, height + y);
+  label.style("white-space", "nowrap");
+  label.style("width", "170px");
+  label.position(x, height + y);
+  slider.style("width", "140px");
+  slider.position(x + 180, height + y);
 }
