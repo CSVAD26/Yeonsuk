@@ -51,7 +51,7 @@ let strokeweightslider;
 let pendulumshown = true;
 
 function setup() {
-  createCanvas(1000, 700);
+  createCanvas(1680, 750);
   traceLayer = createGraphics(width, height);
   Pivot = createVector( width/2, height/4);
 
